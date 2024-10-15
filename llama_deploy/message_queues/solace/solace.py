@@ -142,7 +142,7 @@ class SolaceMessageQueue(BaseMessageQueue):
         """
         consumer_subscription = consumer.message_type
         topics = [TopicSubscription.of(consumer_subscription)]
-        logger.debug(f"Consumer subscription: {topics}")
+        logger.debug(f"Consumer subscription: {consumer.message_type}")
 
         try:
             if not self.messaging_service.is_connected:
