@@ -1,5 +1,8 @@
 import os
 import logging
+from typing import Any, Dict, List, Literal, TYPE_CHECKING
+
+# if TYPE_CHECKING:
 from solace.messaging.config.solace_properties import (
     transport_layer_properties,
     service_properties,
@@ -112,7 +115,6 @@ class Boot:
         """
         try:
             props = Boot.read_solbroker_props()
-            props.pop(HOST_SECURED, None)  # Example of removing the secured host if needed
             return props
         except Exception as exception:
             logger.error(f"Unable to read broker properties. Exception: {exception}")
