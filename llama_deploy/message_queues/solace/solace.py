@@ -2,7 +2,6 @@
 
 import asyncio
 import json
-import logging
 import time
 import threading
 from string import Template
@@ -36,23 +35,11 @@ MAX_SLEEP = 10
 QUEUE_TEMPLATE = Template('Q/$iteration')
 lock = threading.Lock()
 
-def configure_logger() -> logging.Logger:
-    """Configure and return the logger."""
-    logger = getLogger(__name__)
-    logger.setLevel(logging.DEBUG)
-
-    if not logger.hasHandlers():
-        handler = logging.StreamHandler()
-        formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-        handler.setFormatter(formatter)
-        logger.addHandler(handler)
-
-    return logger
-
 # Configure logger
-logger = configure_logger()
+logger = logger = getLogger(__name__)
 
 class MessagePublishReceiptListenerImpl(MessagePublishReceiptListener):
+    """Message publish receipt listener for Solace message queue."""
     def __init__(self):
         self._publish_count = 0
         pass
@@ -64,19 +51,19 @@ class MessagePublishReceiptListenerImpl(MessagePublishReceiptListener):
     def on_publish_receipt(self, publish_receipt: 'PublishReceipt'):
         with lock:
             self._publish_count += 1
-            print(f"\tMessage: {publish_receipt.message}\n"
+            logger.info(f"\tMessage: {publish_receipt.message}\n"
                   f"\tIs persisted: {publish_receipt.is_persisted}\n"
                   f"\tTimestamp: {publish_receipt.time_stamp}\n"
                   f"\tException: {publish_receipt.exception}\n")
             if publish_receipt.user_context:
-                print(f'\tUsercontext received: {publish_receipt.user_context.get_custom_message}')
+                logger.info(f'\tUsercontext received: {publish_receipt.user_context.get_custom_message}')
 
 class MessageHandlerImpl(MessageHandler):
+    """Message handler for Solace message queue."""
     def __init__(self, consumer: BaseMessageQueueConsumer):
         self.consumer = consumer
 
     def on_message(self, message: InboundMessage):
-        # Check if the payload is a String or Byte, decode if its the later
         topic = message.get_destination_name()
         payload_as_string = message.get_payload_as_string()
         correlation_id = message.get_correlation_id()
@@ -108,6 +95,7 @@ class SolaceMessageQueue(BaseMessageQueue):
     publisher: PersistentMessagePublisher = None
     persistent_receiver: PersistentMessageReceiver = None
     broker_properties: dict = None
+    is_queue_temporary: bool = True
 
     def __init__(self, **kwargs: Any) -> None:
         """Initialize the Solace message queue."""
@@ -120,6 +108,7 @@ class SolaceMessageQueue(BaseMessageQueue):
             )
             .build()
             )
+        self.is_queue_temporary = self.broker_properties.get('IS_QUEUE_TEMPORARY')
         logger.info("Solace Messaging Service created")
 
     def __del__(self) -> None:
@@ -167,16 +156,26 @@ class SolaceMessageQueue(BaseMessageQueue):
         except Exception as e:
             logger.error(f"Failed to publish message: {e}")
             raise
+    
+    def disconnect(self) -> None:
+        """Disconnect from the Solace server."""
+        try:
+            self.messaging_service.disconnect()
+            logger.info("Disconnected from Solace server")
+        except Exception as exception:
+            logger.debug("Error disconnecting: %s", exception)
 
-    def bind_to_queue(
-        self, subscriptions: list = None, temporary: bool = True
-    ) -> None:
+    def is_connected(self) -> bool:
+        """Check if the Solace server is connected."""
+        return self.messaging_service.is_connected
+
+    def bind_to_queue(self, subscriptions: list = None) -> None:
         """Bind to a queue and subscribe to topics."""
         if subscriptions is None:
             return
         queue_name = QUEUE_TEMPLATE.substitute(iteration=subscriptions[0])
 
-        if temporary:
+        if self.is_queue_temporary:
             queue = Queue.non_durable_exclusive_queue(queue_name)
         else:
             queue = Queue.durable_exclusive_queue(queue_name)
@@ -195,7 +194,7 @@ class SolaceMessageQueue(BaseMessageQueue):
             logger.debug(
                 "Persistent receiver started... Bound to Queue [%s] (Temporary: %s)",
                 queue.get_name(),
-                temporary,
+                self.is_queue_temporary,
             )
 
         # Handle API exception
@@ -213,27 +212,9 @@ class SolaceMessageQueue(BaseMessageQueue):
                 logger.info("Subscribed to topic: %s", subscription)
 
         return 
-    
-    def disconnect(self) -> None:
-        """Disconnect from the Solace server."""
-        try:
-            self.messaging_service.disconnect()
-        except Exception as exception:
-            logger.debug("Error disconnecting: %s", exception)
-
-    def is_connected(self) -> bool:
-        return self.messaging_service.is_connected
 
     async def register_consumer(self, consumer: BaseMessageQueueConsumer) -> StartConsumingCallable:
-        """
-        Register a new consumer.
-
-        Args:
-            consumer (BaseMessageQueueConsumer): The consumer to register.
-        
-        Returns:
-            StartConsumingCallable: A callable to start consuming messages.
-        """
+        """Register a new consumer."""
         consumer_subscription = consumer.message_type
         subscriptions = [TopicSubscription.of(consumer_subscription)]
 
@@ -241,7 +222,7 @@ class SolaceMessageQueue(BaseMessageQueue):
             if not self.is_connected():
                 await self._establish_connection()
 
-            self.bind_to_queue(subscriptions=subscriptions, temporary = True)
+            self.bind_to_queue(subscriptions=subscriptions)
             logger.info(f"Consumer registered to: {consumer_subscription}")
             self.persistent_receiver.receive_async(MessageHandlerImpl(consumer))
 
@@ -254,12 +235,7 @@ class SolaceMessageQueue(BaseMessageQueue):
             raise
 
     async def deregister_consumer(self, consumer: BaseMessageQueueConsumer) -> None:
-        """
-        Deregister a consumer.
-
-        Args:
-            consumer (BaseMessageQueueConsumer): The consumer to deregister.
-        """
+        """Deregister a consumer."""
         consumer_subscription = consumer.message_type
         topics = [TopicSubscription.of(consumer_subscription)]
 
