@@ -4,6 +4,23 @@ This example demonstrates how to run a workflow and interact with it. Two workfl
 ## Installation
 ### Solace PubSub+ Event Broker
 Install the [Solace PubSub+ event broker](https://docs.solace.com/Get-Started/Getting-Started-Try-Broker.htm).
+
+#### Set Environment Variables
+```bash
+export SOLACE_HOST='tcp://localhost:55554'
+export SOLACE_HOST_SECURED='tcps://localhost:55443'
+export SOLACE_HOST_COMPRESSED='tcp://localhost:55003'
+export SOLACE_VPN_NAME='default'
+export SOLACE_USERNAME='default'
+export SOLACE_PASSWORD='default'
+export SOLACE_IS_QUEUE_TEMPORARY='false'
+```
+
+#### Install Solace PubSub+ Python Package
+```bash
+pip install solace-pubsubplus
+```
+
 #### Verification
 Open the PubSub+ interface in your browser. If you’re running PubSub+ locally, go to http://localhost:8080. Use ‘admin’ for both the username and password. Once the dashboard loads, click on ‘Try Me’ from the left-side menu. Then, subscribe to the 'hello_workflow', 'ping_workflow' and 'control_plane' topics to monitor events.
 
