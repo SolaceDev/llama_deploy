@@ -21,22 +21,22 @@ VALID_CERTIFICATE_AUTHORITY = 'public_root_ca'
 IS_QUEUE_TEMPORARY = 'IS_QUEUE_TEMPORARY'
 
 # Configure logger
-logger = logger = getLogger(__name__)
+logger = getLogger(__name__)
 
-class Boot:
+class BootSolace:
     """Class for instantiating the broker properties from environment."""
 
     @staticmethod
     def read_solbroker_props() -> dict:
         """Reads Solbroker properties from environment variables."""
         broker_properties = {
-            transport_layer_properties.HOST: os.getenv('SOLACE_HOST', 'tcp://localhost:55554'),
-            service_properties.VPN_NAME: os.getenv('SOLACE_VPN_NAME', 'default'),
-            authentication_properties.SCHEME_BASIC_USER_NAME: os.getenv('SOLACE_USERNAME', 'default'),
-            authentication_properties.SCHEME_BASIC_PASSWORD: os.getenv('SOLACE_PASSWORD', 'default'),
-            HOST_SECURED: os.getenv('SOLACE_HOST_SECURED', 'tcps://localhost:55443'),
-            HOST_COMPRESSED: os.getenv('SOLACE_HOST_COMPRESSED', 'tcp://localhost:55003'),
-            IS_QUEUE_TEMPORARY: os.getenv('SOLACE_IS_QUEUE_TEMPORARY', 'true') .lower() in ['true', '1', 'yes'],
+            transport_layer_properties.HOST: os.getenv('SOLACE_HOST'),
+            service_properties.VPN_NAME: os.getenv('SOLACE_VPN_NAME'),
+            authentication_properties.SCHEME_BASIC_USER_NAME: os.getenv('SOLACE_USERNAME'),
+            authentication_properties.SCHEME_BASIC_PASSWORD: os.getenv('SOLACE_PASSWORD'),
+            HOST_SECURED: os.getenv('SOLACE_HOST_SECURED'),
+            HOST_COMPRESSED: os.getenv('SOLACE_HOST_COMPRESSED'),
+            IS_QUEUE_TEMPORARY: os.getenv('SOLACE_IS_QUEUE_TEMPORARY').lower() in ['true', '1', 'yes'],
         }
 
         # Validate required properties
@@ -70,7 +70,7 @@ class Boot:
     def broker_properties() -> dict:
         """Reads the Solbroker properties from environment variables."""
         try:
-            props = Boot.read_solbroker_props()
+            props = BootSolace.read_solbroker_props()
             return props
         except Exception as exception:
             logger.error(f"Unable to read broker properties. Exception: {exception}")

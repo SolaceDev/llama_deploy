@@ -6,15 +6,7 @@ This example demonstrates how to run a workflow and interact with it. Two workfl
 Install the [Solace PubSub+ event broker](https://docs.solace.com/Get-Started/Getting-Started-Try-Broker.htm).
 
 #### Set Environment Variables
-```bash
-export SOLACE_HOST='tcp://localhost:55554'
-export SOLACE_HOST_SECURED='tcps://localhost:55443'
-export SOLACE_HOST_COMPRESSED='tcp://localhost:55003'
-export SOLACE_VPN_NAME='default'
-export SOLACE_USERNAME='default'
-export SOLACE_PASSWORD='default'
-export SOLACE_IS_QUEUE_TEMPORARY='false'
-```
+Rename the 'template.env.solace' file to '.env.solace'.
 
 #### Install Solace PubSub+ Python Package
 ```bash

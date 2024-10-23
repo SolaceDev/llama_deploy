@@ -1,4 +1,5 @@
 import asyncio
+from dotenv import load_dotenv, find_dotenv
 from datetime import datetime
 from llama_deploy import (
     deploy_workflow,
@@ -48,6 +49,14 @@ class HelloWorkflow(Workflow):
 
         return StopEvent(result=result)
 
+def load_env():
+    # Load environment variables from .env.solace file
+    dotenv_path = find_dotenv('.env.solace')
+    if not dotenv_path:
+        raise FileNotFoundError('.env.solace file not found')
+    
+    load_dotenv(dotenv_path)
+
 async def main():
     flow1 = deploy_workflow(
         workflow=PingWorkflow(),
@@ -69,4 +78,5 @@ async def main():
     await asyncio.gather(flow1, flow2)
 
 if __name__ == "__main__":
+    load_env()
     asyncio.run(main())

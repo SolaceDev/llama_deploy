@@ -28,28 +28,27 @@ from solace.messaging.messaging_service import MessagingService
 from solace.messaging.resources.queue import Queue
 from solace.messaging.config.missing_resources_creation_configuration import MissingResourcesCreationStrategy
 
-from .boot import Boot
+from .boot import BootSolace
 
 # Constants
 MAX_SLEEP = 10
 QUEUE_TEMPLATE = Template('Q/$iteration')
-lock = threading.Lock()
 
 # Configure logger
-logger = logger = getLogger(__name__)
+logger = getLogger(__name__)
 
 class MessagePublishReceiptListenerImpl(MessagePublishReceiptListener):
     """Message publish receipt listener for Solace message queue."""
     def __init__(self):
         self._publish_count = 0
-        pass
+        self._lock = threading.Lock()
 
     @property
     def get_publish_count(self):
         return self._publish_count
 
     def on_publish_receipt(self, publish_receipt: 'PublishReceipt'):
-        with lock:
+        with self._lock:
             self._publish_count += 1
             logger.info(f"\tMessage: {publish_receipt.message}\n"
                   f"\tIs persisted: {publish_receipt.is_persisted}\n"
@@ -100,7 +99,7 @@ class SolaceMessageQueue(BaseMessageQueue):
     def __init__(self, **kwargs: Any) -> None:
         """Initialize the Solace message queue."""
         super().__init__()
-        self.broker_properties = Boot.broker_properties()
+        self.broker_properties = BootSolace.broker_properties()
         self.messaging_service = (MessagingService.builder()
             .from_properties(self.broker_properties)
             .with_reconnection_retry_strategy(
