@@ -8,7 +8,7 @@ from llama_deploy.message_queues.simple import SimpleMessageQueueConfig
 from llama_deploy.message_queues.rabbitmq import RabbitMQMessageQueueConfig
 from llama_deploy.message_queues.redis import RedisMessageQueueConfig
 from llama_deploy.message_queues.aws import AWSMessageQueueConfig
-from llama_deploy.message_queues.solace.solace import SolaceMessageQueueConfig
+from llama_deploy.message_queues.solace import SolaceMessageQueueConfig
 
 
 control_plane_config = ControlPlaneConfig()
