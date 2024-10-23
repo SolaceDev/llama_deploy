@@ -5,9 +5,6 @@ This example demonstrates how to run a workflow and interact with it. Two workfl
 ### Solace PubSub+ Event Broker
 Install the [Solace PubSub+ event broker](https://docs.solace.com/Get-Started/Getting-Started-Try-Broker.htm).
 
-#### Set Environment Variables
-Rename the 'template.env.solace' file to '.env.solace'.
-
 #### Install Solace PubSub+ Python Package
 ```bash
 pip install solace-pubsubplus

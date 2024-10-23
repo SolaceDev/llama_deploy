@@ -57,8 +57,6 @@ docker compose -f ./redis/docker/docker-compose.yml --project-directory ./ up --
 docker compose -f ./solace/docker/docker-compose.yml --project-directory ./ up --build -d
 ```
 
-NOTE: For running the Solace docker, please rename the 'template.env.solace' to '.env.solace'.
-
 NOTE: In a real-world app, you would only use one of these message queues. So, in
 building your application (i.e., see `_app/`) you would not need to include the
 other message queues in your source code as we've done here.
