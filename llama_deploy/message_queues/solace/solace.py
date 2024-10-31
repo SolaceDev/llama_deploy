@@ -43,10 +43,6 @@ class MessagePublishReceiptListenerImpl(MessagePublishReceiptListener):
         self._publish_count = 0
         self._lock = threading.Lock()
 
-    @property
-    def get_publish_count(self):
-        return self._publish_count
-
     def on_publish_receipt(self, publish_receipt: 'PublishReceipt'):
         with self._lock:
             self._publish_count += 1
