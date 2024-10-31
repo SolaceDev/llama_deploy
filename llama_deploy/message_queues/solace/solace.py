@@ -59,29 +59,37 @@ class MessagePublishReceiptListenerImpl(MessagePublishReceiptListener):
 
 class MessageHandlerImpl(MessageHandler):
     """Message handler for Solace message queue."""
-    def __init__(self, consumer: BaseMessageQueueConsumer):
-        self.consumer = consumer
+    def __init__(self, consumer: BaseMessageQueueConsumer, receiver=None):
+        self._consumer = consumer
+        self._receiver = receiver
 
     def on_message(self, message: InboundMessage):
-        topic = message.get_destination_name()
-        payload_as_string = message.get_payload_as_string()
-        correlation_id = message.get_correlation_id()
+        try:
+            topic = message.get_destination_name()
+            payload_as_string = message.get_payload_as_string()
+            correlation_id = message.get_correlation_id()
 
-        message_details = {
-            "topic": topic,
-            "payload": payload_as_string,
-            "correlation_id": correlation_id
-        }
+            message_details = {
+                "topic": topic,
+                "payload": payload_as_string,
+                "correlation_id": correlation_id
+            }
 
-        # Log the consumed message in JSON format
-        logger.debug(f"Consumed message: {json.dumps(message_details, indent=2)}")
+            # Log the consumed message in JSON format
+            logger.debug(f"Consumed message: {json.dumps(message_details, indent=2)}")
 
-        # Parse the payload and validate the queue message
-        queue_message_data = json.loads(payload_as_string)
-        queue_message = QueueMessage.model_validate(queue_message_data)
+            # Parse the payload and validate the queue message
+            queue_message_data = json.loads(payload_as_string)
+            queue_message = QueueMessage.model_validate(queue_message_data)
 
-        # Process the message using the consumer
-        asyncio.run(self.consumer.process_message(queue_message))
+            # Process the message using the consumer
+            asyncio.run(self._consumer.process_message(queue_message))
+
+            if self._receiver:
+                self._receiver.ack(message)
+                
+        except Exception as unexpected_error:
+            logger.error(f"Error consuming message: {unexpected_error}")
 
 class SolaceMessageQueueConfig(BaseSettings):
     """Solace PubSub+ message queue configuration."""
@@ -223,7 +231,7 @@ class SolaceMessageQueue(BaseMessageQueue):
 
             self.bind_to_queue(subscriptions=subscriptions)
             logger.info(f"Consumer registered to: {consumer_subscription}")
-            self.persistent_receiver.receive_async(MessageHandlerImpl(consumer))
+            self.persistent_receiver.receive_async(MessageHandlerImpl(consumer=consumer, receiver=self.persistent_receiver))
 
             async def start_consuming_callable() -> None:
                 await asyncio.Future()
